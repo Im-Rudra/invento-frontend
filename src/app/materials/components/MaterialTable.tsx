@@ -35,7 +35,7 @@ export default function MaterialTable({
   }
 
   return (
-    <ScrollArea className="h-96">
+    <ScrollArea className="h-[450px] border-2 rounded">
       <Table>
         <TableHeader>
           <TableRow>

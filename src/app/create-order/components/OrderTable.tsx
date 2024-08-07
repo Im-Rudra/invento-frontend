@@ -10,6 +10,7 @@ import {
 import { getDate } from '@/lib/utils';
 import { Material, MaterialType, Order, Supplier } from '@/types';
 import TableAction from './TableAction';
+import { IoLeafOutline } from 'react-icons/io5';
 
 export default function OrderTable({
   orders,
@@ -22,8 +23,16 @@ export default function OrderTable({
   materials: Material[];
   materialTypes: MaterialType[];
 }) {
+  if (orders.length <= 0) {
+    return (
+      <div className="text-xl mt-6 mb-2 flex justify-center items-center flex-col">
+        <IoLeafOutline className="w-20 h-20" />
+        <h3>No Orders</h3>
+      </div>
+    );
+  }
   return (
-    <ScrollArea className="h-96">
+    <ScrollArea className="h-[450px] rounded border-2">
       <Table>
         <TableHeader>
           <TableRow>

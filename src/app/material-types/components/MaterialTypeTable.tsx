@@ -17,7 +17,7 @@ const getDate = (date: string) => {
 
 export function MaterialTypeTable({ materialTypes }: { materialTypes: MaterialType[] }) {
   return (
-    <ScrollArea className="h-96">
+    <ScrollArea className="h-[450px] rounded border-2">
       <Table>
         <TableHeader>
           <TableRow>
