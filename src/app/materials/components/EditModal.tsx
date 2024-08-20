@@ -1,11 +1,11 @@
 'use client';
 
-import { createMaterial, updateMaterial } from '@/actions';
-import { Combobox } from '@/components/Combobox';
+import { updateMaterial } from '@/actions';
+import SelectBox from '@/components/SelectBox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreateMaterial, Material, MaterialType } from '@/types';
+import { Material, MaterialType } from '@/types';
 import { useState } from 'react';
 import { LuLoader2 } from 'react-icons/lu';
 import { toast } from 'sonner';
@@ -85,7 +85,18 @@ export default function EditModal({
             />
           </div>
           <div>
-            <Label htmlFor="material_type">Material Type</Label>
+            <SelectBox
+              htmlFor="material_type"
+              title="Material Type*"
+              options={materialTypes.map((type) => ({
+                id: type.id,
+                name: type.type_name,
+                value: type.type_name
+              }))}
+              value={typeId}
+              setValue={setTypeId}
+            />
+            {/* <Label htmlFor="material_type">Material Type</Label>
             <Combobox
               id={typeId}
               setId={setTypeId}
@@ -94,7 +105,7 @@ export default function EditModal({
                 name: type.type_name,
                 value: type.type_name
               }))}
-            />
+            /> */}
           </div>
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
             <Button variant="secondary" size="sm" onClick={() => openHandler(false)}>

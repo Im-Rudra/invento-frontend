@@ -1,12 +1,11 @@
 'use client';
 
-import { createSupplier, updateSupplier } from '@/actions';
+import { updateSupplier } from '@/actions';
+import MultiSelect from '@/components/MultiSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { CreateOrUpdateSupplier, Material, Supplier } from '@/types';
-import { Check, ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
 import { FiPlusCircle } from 'react-icons/fi';
 import { LuLoader2 } from 'react-icons/lu';
@@ -25,17 +24,15 @@ export default function EditModal({
   const [name, setName] = useState<string>(supplier.supplier_name);
   const [addresses, setAddresses] = useState<string[]>(supplier.addresses);
   const [materialIds, setMaterialIds] = useState<number[]>(
-    supplier.Materials?.length ? supplier.Materials.map((m) => m.Material?.id) : []
+    supplier.Materials?.length ? supplier.Materials?.map((m) => m.Material?.id!) : []
   );
   const [newAddress, setNewAddress] = useState<string>('');
-
   const [loading, setLoading] = useState<boolean>(false);
-  const [materialDropdownOpen, setMaterialDropdownOpen] = useState<boolean>(false);
 
   const handleEdit = async () => {
     if (!name) return toast.warning('Supplier-name cannot be empty!');
     if (!addresses.length) return toast.warning('Minimum 1 address required!');
-    // console.log({ supplier_name: name, addresses, materials: materialIds });
+    if (!(materialIds.length > 0)) return toast.warning('Minimum 1 material required!');
 
     setLoading(true);
     const data: CreateOrUpdateSupplier = {
@@ -126,48 +123,18 @@ export default function EditModal({
           </div>
 
           <div>
-            <Label htmlFor="materials">Materials</Label>
-            <div className="relative">
-              <Button
-                variant="outline"
-                className="w-full justify-between"
-                onClick={() => setMaterialDropdownOpen((prev) => !prev)}
-              >
-                {materialIds.length > 0
-                  ? `${materialIds.length} material${materialIds.length > 1 ? 's' : ''} selected`
-                  : 'Please select materials...'}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-              {materialDropdownOpen && (
-                <div className="absolute mt-1 w-full">
-                  <ScrollArea className="w-full h-32 border p-2 rounded-md bg-background ">
-                    <div>
-                      {materials.map((material) => (
-                        <div
-                          key={material.id}
-                          className="w-full rounded-md px-2 py-1 hover:bg-muted flex items-center cursor-pointer"
-                          onClick={() => {
-                            if (materialIds.includes(material.id)) {
-                              return setMaterialIds((prev) =>
-                                prev.filter((id) => id !== material.id)
-                              );
-                            }
-                            setMaterialIds((prev) => [...prev, material.id]);
-                          }}
-                        >
-                          {materialIds.includes(material.id) ? (
-                            <Check className="mr-2 w-3 h-3" />
-                          ) : (
-                            <Check className="mr-2 w-3 h-3 text-transparent" />
-                          )}
-                          {material.material_name}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
-              )}
-            </div>
+            <MultiSelect
+              itemType="material"
+              title="Materials"
+              values={materialIds}
+              setValues={setMaterialIds}
+              options={materials.map((m) => ({
+                id: m.id,
+                name: m.material_name,
+                value: m.material_name
+              }))}
+              disabled={false}
+            />
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end ">
             <Button variant="secondary" size="sm" onClick={() => openHandler(false)}>

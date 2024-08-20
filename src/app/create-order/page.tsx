@@ -8,6 +8,7 @@ export default async function CreateOrderPage() {
   const suppliers = await getAllSuppliers();
   const materials = await getAllMaterials();
   const materialTypes = await getAllMaterialType();
+
   return (
     <Container>
       <div className="py-4 min-h-[calc(100vh-60px)]">

@@ -1,7 +1,7 @@
 'use client';
 
 import { createMaterial } from '@/actions';
-import { Combobox } from '@/components/Combobox';
+import SelectBox from '@/components/SelectBox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,7 +77,18 @@ export default function CreateModal({
             />
           </div>
           <div>
-            <Label htmlFor="material_type">Material Type</Label>
+            <SelectBox
+              htmlFor="material_type"
+              title="Material Type*"
+              options={materialTypes.map((type) => ({
+                id: type.id,
+                name: type.type_name,
+                value: type.type_name
+              }))}
+              value={typeId}
+              setValue={setTypeId}
+            />
+            {/* <Label htmlFor="material_type">Material Type</Label>
             <Combobox
               id={typeId}
               setId={setTypeId}
@@ -86,7 +97,7 @@ export default function CreateModal({
                 name: type.type_name,
                 value: type.type_name
               }))}
-            />
+            /> */}
           </div>
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
             <Button variant="secondary" size="sm" onClick={() => openHandler(false)}>

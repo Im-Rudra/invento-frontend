@@ -38,10 +38,9 @@ export default function OrderTable({
           <TableRow>
             <TableHead>SN</TableHead>
             <TableHead className="">(id) Supplier</TableHead>
-            <TableHead className="">(id) Type</TableHead>
+            <TableHead className="">Types</TableHead>
             <TableHead className="">Materials</TableHead>
             <TableHead className="">Total Cost $</TableHead>
-            <TableHead className="">Status</TableHead>
             <TableHead className="w-[200px]">Created At</TableHead>
           </TableRow>
         </TableHeader>
@@ -54,12 +53,11 @@ export default function OrderTable({
                   ? `(${order.supplier_id}) ${order.Supplier?.supplier_name}`
                   : 'N/A'}
               </TableCell>
-              <TableCell>{`(${order.material_type_id}) ${order.Material_Type?.type_name}`}</TableCell>
+              <TableCell className="text-center">{order.Material_Types.length}</TableCell>
               <TableCell className="text-center">{order.Materials.length}</TableCell>
               <TableCell className="text-right">
-                {order.Materials.reduce((t, m) => t + m.price, 0)}
+                {order.Materials.reduce((t, m) => t + m.quantity * m.Material.price, 0)}
               </TableCell>
-              <TableCell>{order.status}</TableCell>
               <TableCell className="flex justify-between items-center">
                 <span>{getDate(order.created_at)}</span>
                 <TableAction

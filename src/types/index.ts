@@ -11,10 +11,7 @@ export type Material = {
   material_type_id: number;
   created_at: string;
   Material_Type?: MaterialType;
-  Suppliers?: {
-    id: number;
-    Supplier: Supplier;
-  }[];
+  Suppliers?: MaterialsOnSuppliers[];
 };
 
 export type Supplier = {
@@ -22,10 +19,16 @@ export type Supplier = {
   supplier_name: string;
   addresses: string[];
   created_at: string;
-  Materials?: {
-    id: number;
-    Material: Material;
-  }[];
+  Materials?: MaterialsOnSuppliers[];
+};
+
+export type MaterialsOnSuppliers = {
+  id: number;
+  material_id: number;
+  supplier_id: number;
+  created_at: string;
+  Material?: Material;
+  Supplier?: Supplier;
 };
 
 export enum Status {
@@ -37,21 +40,31 @@ export enum Status {
   Canceled
 }
 
+type OrderMaterial = {
+  id: number;
+  order_id: number;
+  material_id: number;
+  quantity: number;
+  Order: Order;
+  Material: Material;
+};
+
 export type Order = {
   id: number;
+  order_type: 'by_materials' | 'by_suppliers';
   supplier_id: number;
   material_type_id: number;
   status: 'Pending' | 'Approved' | 'Shipping' | 'Delivered' | 'Completed' | 'Canceled';
   Supplier: Supplier;
-  Material_Type: MaterialType;
-  Materials: Material[];
-  total_cost: number;
+  address: string;
+  Material_Types: MaterialType[];
+  Materials: OrderMaterial[];
   created_at: string;
   updated_at: string;
 };
 
-export type ComboboxOption = {
-  id: number;
+export type SelectOption = {
+  id: number | string;
   name: string;
   value: string;
 };
@@ -75,16 +88,22 @@ export type CreateOrUpdateSupplier = {
 };
 
 export type CreateOrder = {
-  material_type_id: number;
-  material_ids: number[];
-  supplier_id?: number;
-  total_cost: number;
+  supplier_id: number;
+  address: string;
+  order_type: 'by_materials' | 'by_suppliers';
+  material_type_ids: number[];
+  material_id_qtys: MaterialQty[];
 };
 
 export type UpdateOrder = {
-  material_type_id?: number;
-  material_ids?: number[];
   supplier_id?: number;
-  total_cost?: number;
-  status?: string;
+  address?: string;
+  order_type?: 'by_materials' | 'by_suppliers';
+  material_type_ids?: number[];
+  material_id_qtys?: MaterialQty[];
+};
+
+export type MaterialQty = {
+  material_id: number;
+  quantity: number;
 };

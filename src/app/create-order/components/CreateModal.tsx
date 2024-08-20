@@ -2,15 +2,14 @@
 
 import { createOrder } from '@/actions';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreateOrder, Material, MaterialType, Supplier } from '@/types';
-import { useEffect, useState } from 'react';
+import { CreateOrder, Material, MaterialQty, MaterialType, Supplier } from '@/types';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { LuLoader2 } from 'react-icons/lu';
 import { toast } from 'sonner';
-import Combobox from './Combobox';
 import MaterialsTable from './MaterialsTable';
-import MultiSelect from './MultiSelect';
+import SelectBox from '@/components/SelectBox';
+import MultiSelect from '@/components/MultiSelect';
 
 export default function CreateModal({
   openHandler,
@@ -23,32 +22,38 @@ export default function CreateModal({
   materialTypes: MaterialType[];
   openHandler: (open: boolean) => void;
 }) {
-  const [tab, setTab] = useState<string>('materials');
+  const [tab, setTab] = useState<'by_materials' | 'by_suppliers'>('by_materials');
 
   const [materialIds, setMaterialIds] = useState<number[]>([]);
+  const [supplierId, setSupplierId] = useState<number>(0);
+  const [materialTypeIds, setMaterialTypeIds] = useState<number[]>([]);
+  const [address, setAddress] = useState<string>('');
+
+  const [materialQtys, setMaterialQtys] = useState<MaterialQty[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   const selectedMaterials = materialIds.map((id) =>
     materials.find((m) => m.id === id)
   ) as Material[];
 
-  const [supplierId, setSupplierId] = useState<number>(0);
-  const [materialTypeId, setMaterialTypeId] = useState<number>(0);
-
   const handleSave = async () => {
-    if (tab === 'suppliers') {
-      if (!supplierId) return toast.warning('Select a supplier!');
-    }
-    if (!materialTypeId) return toast.warning('Select material type!');
+    if (!supplierId) return toast.warning('Supplier required!');
+    if (!materialTypeIds.length) return toast.warning('Minimum 1 material type required!');
     if (!materialIds.length) return toast.warning('Minimum 1 material required!');
+    if (!address) return toast.warning('Address required!');
+
     const data: CreateOrder = {
-      material_type_id: materialTypeId,
-      material_ids: materialIds,
-      total_cost: selectedMaterials.reduce((total, material) => total + material.price, 0)
+      supplier_id: supplierId,
+      address,
+      order_type: tab,
+      material_type_ids: materialTypeIds,
+      material_id_qtys: materialIds.map((i) => ({
+        material_id: i,
+        quantity: materialQtys.find((mq) => mq.material_id === i)?.quantity || 1
+      }))
     };
-    if (tab === 'suppliers') {
-      data.supplier_id = supplierId;
-    }
+
+    // return console.log(data);
 
     setLoading(true);
     const newOrder = await createOrder(data);
@@ -65,100 +70,175 @@ export default function CreateModal({
 
   useEffect(() => {
     setMaterialIds([]);
+    setMaterialTypeIds([]);
+    setSupplierId(0);
+    setAddress('');
   }, [tab]);
+
+  function getCommonSuppliers(seletectedMaterialIds: number[], suppliers: Supplier[]) {
+    const supplierMaterialCountMap = new Map();
+    suppliers.forEach((supplier) => {
+      supplier.Materials?.forEach((materialSupplier) => {
+        if (seletectedMaterialIds.includes(materialSupplier.material_id)) {
+          if (!supplierMaterialCountMap.has(supplier.id)) {
+            supplierMaterialCountMap.set(supplier.id, 0);
+          }
+          supplierMaterialCountMap.set(supplier.id, supplierMaterialCountMap.get(supplier.id) + 1);
+        }
+      });
+    });
+    return suppliers.filter(
+      (supplier) => supplierMaterialCountMap.get(supplier.id) === seletectedMaterialIds.length
+    );
+  }
 
   return (
     <div className="w-full h-screen fixed left-0 top-0 z-50 bg-black/80 flex justify-center items-center text-left font-normal">
-      <div className="w-[700px] border-2 rounded-lg bg-background p-6 flex flex-col gap-4">
+      <div className="w-[900px] border-2 rounded-lg bg-background p-6 flex flex-col gap-4">
         <h1 className="text-xl text-center font-semibold leading-none tracking-tight mb-2">
           Create Order
         </h1>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-12 gap-4">
+          <div className="flex flex-col gap-3 col-span-5">
             <div className="w-full">
               <h2 className="text-lg text-center font-semibold leading-none tracking-tight mb-2">
                 Order By
               </h2>
-              <Tabs value={tab} onValueChange={setTab} className="w-full">
+              <Tabs
+                value={tab}
+                onValueChange={setTab as Dispatch<SetStateAction<string>>}
+                className="w-full"
+              >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="materials">Materials</TabsTrigger>
-                  <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+                  <TabsTrigger value="by_materials">Materials</TabsTrigger>
+                  <TabsTrigger value="by_suppliers">Suppliers</TabsTrigger>
                 </TabsList>
-                <TabsContent value="suppliers">
+                <TabsContent value="by_suppliers">
                   <div className="flex flex-col gap-2">
-                    <div>
-                      <Label htmlFor="suppliers">Select Supplier*</Label>
-                      <Combobox
-                        reset={() => {
-                          setMaterialIds([]);
-                          setMaterialTypeId(0);
-                        }}
-                        setId={setSupplierId}
-                        options={suppliers.map((s) => ({
-                          id: s.id,
-                          name: s.supplier_name,
-                          value: s.supplier_name
-                        }))}
-                      />
-                    </div>
-                    <div>
-                      <Label
-                        className={supplierId ? '' : 'text-muted-foreground'}
-                        htmlFor="materialTypes"
-                      >
-                        Select Material Type*
-                      </Label>
-                      <Combobox
-                        reset={() => {
-                          setMaterialIds([]);
-                        }}
-                        triggerer={supplierId}
-                        setId={setMaterialTypeId}
-                        disabled={!supplierId}
-                        options={materialTypes.map((t) => ({
-                          id: t.id,
-                          name: t.type_name,
-                          value: t.type_name
-                        }))}
-                      />
-                    </div>
+                    <SelectBox
+                      htmlFor="supplier"
+                      title="Select Supplier*"
+                      value={supplierId}
+                      setValue={setSupplierId}
+                      options={suppliers.map((s) => ({
+                        id: s.id,
+                        name: s.supplier_name,
+                        value: s.supplier_name
+                      }))}
+                      changeHandler={() => {
+                        setMaterialIds([]);
+                        setMaterialTypeIds([]);
+                        setAddress('');
+                      }}
+                    />
                     <MultiSelect
-                      materials={materials
-                        .filter((m) => !!m.Suppliers?.find((s) => s.Supplier.id === supplierId))
-                        .filter((m) => m.material_type_id === materialTypeId)}
+                      itemType="Material-Type"
+                      title="Select material types"
+                      values={materialTypeIds}
+                      setValues={setMaterialTypeIds}
+                      options={materialTypes.map((t) => ({
+                        id: t.id,
+                        name: t.type_name,
+                        value: t.type_name
+                      }))}
+                      disabled={!supplierId}
+                      onChange={() => {
+                        setMaterialIds([]);
+                      }}
+                    />
+                    <MultiSelect
+                      itemType="material"
+                      title="Select Materials*"
                       values={materialIds}
                       setValues={setMaterialIds}
-                      disabled={!supplierId || !materialTypeId}
+                      disabled={!supplierId || !materialTypeIds.length}
+                      options={materials
+                        .filter((m) => !!m.Suppliers?.find((s) => s.Supplier?.id === supplierId))
+                        .filter((m) => materialTypeIds.includes(m.material_type_id))
+                        .map((m) => ({ id: m.id, name: m.material_name, value: m.material_name }))}
+                    />
+                    <SelectBox
+                      htmlFor="address"
+                      title="Select address*"
+                      value={address}
+                      setValue={setAddress}
+                      disabled={!supplierId}
+                      options={
+                        suppliers
+                          .find((s) => s.id === supplierId)
+                          ?.addresses.map((address) => ({
+                            id: address,
+                            name: address,
+                            value: address
+                          })) || []
+                      }
                     />
                   </div>
                 </TabsContent>
-                <TabsContent value="materials">
+                <TabsContent value="by_materials">
                   <div className="flex flex-col gap-2">
                     <div>
-                      <Label
-                        className={supplierId ? '' : 'text-muted-foreground'}
-                        htmlFor="materialTypes"
-                      >
-                        Select Material Type*
-                      </Label>
-                      <Combobox
-                        reset={() => {
-                          setMaterialIds([]);
-                        }}
-                        setId={setMaterialTypeId}
+                      <MultiSelect
+                        itemType="Material-Type"
+                        title="Select material types"
+                        values={materialTypeIds}
+                        setValues={setMaterialTypeIds}
                         options={materialTypes.map((t) => ({
                           id: t.id,
                           name: t.type_name,
                           value: t.type_name
                         }))}
+                        disabled={false}
+                        onChange={() => {
+                          setMaterialIds([]);
+                          setSupplierId(0);
+                        }}
                       />
                     </div>
                     <MultiSelect
-                      materials={materials.filter((m) => m.material_type_id === materialTypeId)}
+                      options={materials
+                        .filter((m) => materialTypeIds.includes(m.material_type_id))
+                        .map((m) => ({ id: m.id, name: m.material_name, value: m.material_name }))}
+                      itemType="Material"
+                      title="Select Materials"
                       values={materialIds}
                       setValues={setMaterialIds}
-                      disabled={
-                        tab === 'suppliers' ? !supplierId || !materialTypeId : !materialTypeId
+                      disabled={!materialTypeIds.length}
+                      onChange={() => {
+                        setSupplierId(0);
+                      }}
+                    />
+
+                    <SelectBox
+                      htmlFor="supplier"
+                      title="Select Supplier*"
+                      disabled={!materialIds.length}
+                      value={supplierId}
+                      setValue={setSupplierId}
+                      options={getCommonSuppliers(materialIds, suppliers).map((s) => ({
+                        id: s.id,
+                        name: s.supplier_name,
+                        value: s.supplier_name
+                      }))}
+                      changeHandler={() => {
+                        setAddress('');
+                      }}
+                    />
+
+                    <SelectBox
+                      htmlFor="address"
+                      title="Select address*"
+                      value={address}
+                      setValue={setAddress}
+                      disabled={!supplierId}
+                      options={
+                        suppliers
+                          .find((s) => s.id === supplierId)
+                          ?.addresses.map((address) => ({
+                            id: address,
+                            name: address,
+                            value: address
+                          })) || []
                       }
                     />
                   </div>
@@ -166,11 +246,17 @@ export default function CreateModal({
               </Tabs>
             </div>
           </div>
-          <div>
+          <div className="col-span-7">
             <h2 className="text-lg text-center font-semibold leading-none tracking-tight mb-2">
               Materials
             </h2>
-            <MaterialsTable materials={selectedMaterials} setMaterialIds={setMaterialIds} />
+            <MaterialsTable
+              materialQtys={materialQtys}
+              setMaterialQtys={setMaterialQtys}
+              materials={selectedMaterials}
+              setMaterialIds={setMaterialIds}
+              heightClass="h-[328px]"
+            />
           </div>
         </div>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end ">
